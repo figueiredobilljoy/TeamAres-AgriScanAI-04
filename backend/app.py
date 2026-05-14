@@ -1,12 +1,20 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from services.analyzer import analyze_crop_image, get_supported_crops
+try:
+    from db.database import get_nearby_disease_insights, initialize_database, save_disease_report
+    from services.analyzer import analyze_crop_image, get_supported_crops
+    from services.location_service import find_nearby_agriculture_stores
+except ModuleNotFoundError:
+    from backend.db.database import get_nearby_disease_insights, initialize_database, save_disease_report
+    from backend.services.analyzer import analyze_crop_image, get_supported_crops
+    from backend.services.location_service import find_nearby_agriculture_stores
 
 
 def create_app():
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}})
+    initialize_database()
 
     @app.get("/")
     def index():
@@ -24,6 +32,21 @@ def create_app():
     @app.get("/crops")
     def crops():
         return jsonify({"crops": get_supported_crops()})
+
+    @app.get("/community")
+    def community():
+        latitude = request.args.get("latitude")
+        longitude = request.args.get("longitude")
+        stores, stores_error = find_nearby_agriculture_stores(latitude, longitude)
+        insights = get_nearby_disease_insights(latitude, longitude)
+
+        return jsonify(
+            {
+                "nearby_stores": stores,
+                "nearby_stores_error": stores_error,
+                "disease_insights": insights,
+            }
+        )
 
     @app.post("/analyze")
     def analyze():
@@ -43,8 +66,18 @@ def create_app():
         if not image.mimetype.startswith("image/"):
             return jsonify({"error": "Uploaded file must be an image."}), 400
 
+        latitude = request.form.get("latitude")
+        longitude = request.form.get("longitude")
+
         try:
             result = analyze_crop_image(image, crop)
+            result["stored_in_community_reports"] = save_disease_report(
+                result["crop"],
+                result["disease"],
+                result["confidence"],
+                latitude,
+                longitude,
+            )
         except ValueError as error:
             return jsonify({"error": str(error)}), 400
         except Exception as error:

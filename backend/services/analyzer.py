@@ -9,6 +9,11 @@ from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.models import load_model
 
+try:
+    from services.gemini_service import get_confidence_disclaimer, get_crop_advice
+except ModuleNotFoundError:
+    from backend.services.gemini_service import get_confidence_disclaimer, get_crop_advice
+
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 MODEL_DIR = BASE_DIR / "ai-model"
@@ -206,9 +211,6 @@ def get_weight_name(weight):
 
 def analyze_crop_image(image_file, crop):
     crop_id, config = get_model_config(crop)
-    image_file.stream.seek(0, 2)
-    image_size = image_file.stream.tell()
-    image_file.stream.seek(0)
 
     model = get_model(crop_id)
     input_size = get_model_input_size(model)
@@ -218,18 +220,21 @@ def analyze_crop_image(image_file, crop):
     class_index = int(np.argmax(predictions))
     confidence = float(predictions[class_index])
     disease = get_class_name(config, class_index)
+    fallback_treatment = TREATMENT_ADVICE.get(
+        disease,
+        "Consult a local agricultural expert for crop-specific treatment guidance.",
+    )
+    advice = get_crop_advice(config["label"], disease, confidence, fallback_treatment)
 
     return {
         "crop": config["label"],
         "disease": disease,
         "confidence": f"{confidence * 100:.2f}%",
-        "severity": get_severity(disease, confidence),
-        "advice": TREATMENT_ADVICE.get(
-            disease,
-            "Consult a local agricultural expert for crop-specific treatment guidance.",
-        ),
-        "filename": image_file.filename,
-        "size_bytes": image_size,
+        "disclaimer": get_confidence_disclaimer(confidence),
+        "severity": advice["severity"],
+        "causes": advice["causes"],
+        "treatment": advice["treatment"],
+        "prevention": advice["prevention"],
     }
 
 
