@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, ImageUp, Leaf, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ImageUp, Leaf, Loader2, Sparkles } from 'lucide-react';
 import ImageUploader from './components/ImageUploader.jsx';
 import ResultCard from './components/ResultCard.jsx';
 
 const API_URL = 'http://localhost:5000/analyze';
+const CROP_OPTIONS = [
+  { id: 'apple', name: 'Apple' },
+  { id: 'mango', name: 'Mango' },
+  { id: 'potato', name: 'Potato' },
+  { id: 'tomato', name: 'Tomato' },
+];
 
 function App() {
+  const [selectedCrop, setSelectedCrop] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [result, setResult] = useState(null);
@@ -29,7 +36,18 @@ function App() {
     setError('');
   };
 
+  const handleCropSelect = (cropId) => {
+    setSelectedCrop(cropId);
+    setResult(null);
+    setError('');
+  };
+
   const handleAnalyze = async () => {
+    if (!selectedCrop) {
+      setError('Please select the crop type before detecting disease.');
+      return;
+    }
+
     if (!selectedFile || isAnalyzing) {
       return;
     }
@@ -39,6 +57,7 @@ function App() {
     setResult(null);
 
     const formData = new FormData();
+    formData.append('crop', selectedCrop);
     formData.append('image', selectedFile);
 
     try {
@@ -88,17 +107,55 @@ function App() {
                   <ImageUp aria-hidden="true" className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-leaf-900">Crop Image</h2>
-                  <p className="text-sm text-leaf-700">PNG, JPG, or WEBP photos work best.</p>
+                  <h2 className="text-xl font-semibold text-leaf-900">Disease Detection</h2>
+                  <p className="text-sm text-leaf-700">Choose the crop, then upload a leaf photo.</p>
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <p className="mb-3 text-sm font-semibold text-leaf-900">Crop type</p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {CROP_OPTIONS.map((crop) => {
+                    const isSelected = selectedCrop === crop.id;
+
+                    return (
+                      <button
+                        aria-pressed={isSelected}
+                        className={`flex min-h-20 flex-col items-start justify-between rounded-2xl border p-3 text-left transition duration-200 ${
+                          isSelected
+                            ? 'border-leaf-700 bg-leaf-700 text-white shadow-lg shadow-leaf-900/15'
+                            : 'border-leaf-200 bg-leaf-50 text-leaf-900 hover:-translate-y-0.5 hover:border-leaf-500 hover:bg-white'
+                        }`}
+                        disabled={isAnalyzing}
+                        key={crop.id}
+                        onClick={() => handleCropSelect(crop.id)}
+                        type="button"
+                      >
+                        <span className="flex w-full items-center justify-between gap-2">
+                          <Leaf aria-hidden="true" className="h-5 w-5" />
+                          {isSelected ? (
+                            <CheckCircle2 aria-hidden="true" className="h-5 w-5" />
+                          ) : null}
+                        </span>
+                        <span className="text-base font-semibold">{crop.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <ImageUploader
-                disabled={isAnalyzing}
+                disabled={isAnalyzing || !selectedCrop}
                 onFileSelect={handleFileSelect}
                 previewUrl={previewUrl}
                 selectedFile={selectedFile}
               />
+
+              {!selectedCrop ? (
+                <p className="mt-3 text-sm text-leaf-700">
+                  Select a crop type first so AgriScan AI can use the matching trained model.
+                </p>
+              ) : null}
 
               {error ? (
                 <div className="mt-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -109,7 +166,7 @@ function App() {
 
               <button
                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-leaf-700 px-5 py-3.5 text-base font-semibold text-white shadow-lg shadow-leaf-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-leaf-800 hover:shadow-xl disabled:cursor-not-allowed disabled:bg-leaf-300 disabled:text-leaf-700 disabled:shadow-none disabled:hover:translate-y-0"
-                disabled={!selectedFile || isAnalyzing}
+                disabled={!selectedCrop || !selectedFile || isAnalyzing}
                 onClick={handleAnalyze}
                 type="button"
               >
@@ -121,7 +178,7 @@ function App() {
                 ) : (
                   <>
                     <Sparkles aria-hidden="true" className="h-5 w-5" />
-                    Analyze Crop
+                    Detect Disease
                   </>
                 )}
               </button>

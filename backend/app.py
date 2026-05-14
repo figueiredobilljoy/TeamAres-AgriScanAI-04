@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from services.analyzer import analyze_crop_image
+from services.analyzer import analyze_crop_image, get_supported_crops
 
 
 def create_app():
@@ -21,8 +21,17 @@ def create_app():
     def health_check():
         return jsonify({"status": "ok"})
 
+    @app.get("/crops")
+    def crops():
+        return jsonify({"crops": get_supported_crops()})
+
     @app.post("/analyze")
     def analyze():
+        crop = request.form.get("crop", "").strip().lower()
+
+        if not crop:
+            return jsonify({"error": "Please select a crop type before uploading an image."}), 400
+
         if "image" not in request.files:
             return jsonify({"error": "No image file was uploaded."}), 400
 
@@ -35,7 +44,9 @@ def create_app():
             return jsonify({"error": "Uploaded file must be an image."}), 400
 
         try:
-            result = analyze_crop_image(image)
+            result = analyze_crop_image(image, crop)
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
         except Exception as error:
             return jsonify({"error": str(error)}), 500
 
