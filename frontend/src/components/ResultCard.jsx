@@ -20,7 +20,33 @@ const emptyState = {
   prevention: [],
 };
 
-function ResultCard({ isLoading, onSpeak, result }) {
+const ADVISORY_LABELS = {
+  en: {
+    severity: 'Severity',
+    causes: 'Causes',
+    treatment: 'Treatment Advice',
+    prevention: 'Prevention Tips',
+  },
+  hi: {
+    severity: '\u0917\u0902\u092d\u0940\u0930\u0924\u093e',
+    causes: '\u0915\u093e\u0930\u0923',
+    treatment: '\u0909\u092a\u091a\u093e\u0930 \u0938\u0932\u093e\u0939',
+    prevention: '\u0930\u094b\u0915\u0925\u093e\u092e \u0915\u0947 \u0909\u092a\u093e\u092f',
+  },
+  mr: {
+    severity: '\u0924\u0940\u0935\u094d\u0930\u0924\u093e',
+    causes: '\u0915\u093e\u0930\u0923\u0947',
+    treatment: '\u0909\u092a\u091a\u093e\u0930 \u0938\u0932\u094d\u0932\u093e',
+    prevention: '\u092a\u094d\u0930\u0924\u093f\u092c\u0902\u0927\u093e\u0924\u094d\u092e\u0915 \u0909\u092a\u093e\u092f',
+  },
+};
+
+function getLabel(language, key) {
+  const labels = ADVISORY_LABELS[language] || ADVISORY_LABELS.en;
+  return labels[key] || ADVISORY_LABELS.en[key];
+}
+
+function ResultCard({ isLoading, language = 'en', onSpeak, result }) {
   const data = result ?? emptyState;
   const hasStructuredAdvice =
     Array.isArray(data.causes) || Array.isArray(data.treatment) || Array.isArray(data.prevention);
@@ -56,9 +82,18 @@ function ResultCard({ isLoading, onSpeak, result }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <MetricCard icon={Leaf} label="Crop" value={data.crop} />
         <MetricCard icon={FlaskConical} label="Disease" value={data.disease} />
-        <MetricCard icon={Activity} label="Confidence" value={data.confidence} />
+        <MetricCard icon={Activity} label="Confidence" value={formatConfidence(data.confidence)} />
         <MetricCard icon={ShieldAlert} label="Severity" value={data.severity} />
       </div>
+
+      {data.alternative_disease ? (
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
+          <p className="text-xs font-medium uppercase tracking-normal text-leaf-200">Possible Alternative</p>
+          <p className="mt-1 text-base font-medium text-leaf-50">
+            {data.alternative_disease} — {formatConfidence(data.alternative_confidence)}
+          </p>
+        </div>
+      ) : null}
 
       {data.disclaimer ? (
         <div className="mt-4 rounded-2xl border border-amber-200/30 bg-amber-100/15 px-4 py-3 text-sm leading-6 text-amber-50">
@@ -67,9 +102,9 @@ function ResultCard({ isLoading, onSpeak, result }) {
       ) : null}
 
       <div className="mt-4 space-y-4 rounded-3xl border border-white/10 bg-white/10 p-5 shadow-inner">
-        <AdviceSection title="Causes" items={data.causes} />
-        <AdviceSection title="Treatment Advice" items={data.treatment ?? data.advice} />
-        {hasStructuredAdvice ? <AdviceSection title="Prevention Tips" items={data.prevention} /> : null}
+        <AdviceSection title={getLabel(language, 'causes')} items={data.causes} />
+        <AdviceSection title={getLabel(language, 'treatment')} items={data.treatment ?? data.advice} />
+        {hasStructuredAdvice ? <AdviceSection title={getLabel(language, 'prevention')} items={data.prevention} /> : null}
       </div>
     </section>
   );
@@ -119,6 +154,14 @@ function normalizeAdviceItems(items) {
   }
 
   return [];
+}
+
+function formatConfidence(confStr) {
+  if (!confStr || confStr === '--') return confStr;
+  const val = parseFloat(confStr);
+  if (isNaN(val)) return confStr;
+  const capped = Math.min(val, 95);
+  return `${Math.round(capped)}%`;
 }
 
 export default ResultCard;

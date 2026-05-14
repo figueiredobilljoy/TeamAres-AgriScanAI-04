@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 import google.generativeai as genai
+from PIL import Image
 from dotenv import load_dotenv
 
 
@@ -16,29 +17,127 @@ GEMINI_FALLBACK_MODEL_NAMES = (
     "gemini-2.0-flash",
 )
 LOGGER = logging.getLogger(__name__)
-MODERATE_CONFIDENCE_DISCLAIMER = (
-    "Prediction confidence is moderate. Results may be less accurate under complex "
-    "lighting or background conditions."
-)
-LOW_CONFIDENCE_DISCLAIMER = (
-    "Prediction confidence is low. Please upload a clearer close-up image of a "
-    "single leaf for a more reliable diagnosis."
-)
+SUPPORTED_LANGUAGES = {
+    "en": "English",
+    "hi": "Hindi",
+    "mr": "Marathi",
+}
+DEFAULT_LANGUAGE = "en"
+CONFIDENCE_DISCLAIMERS = {
+    "en": {
+        "moderate": (
+            "Prediction confidence is moderate. Results may be less accurate under complex "
+            "lighting or background conditions."
+        ),
+        "low": (
+            "Prediction confidence is low. Please upload a clearer close-up image of a "
+            "single leaf for a more reliable diagnosis."
+        ),
+    },
+    "hi": {
+        "moderate": (
+            "\u092a\u0942\u0930\u094d\u0935\u093e\u0928\u0941\u092e\u093e\u0928 \u0915\u093e \u0935\u093f\u0936\u094d\u0935\u093e\u0938 \u092e\u0927\u094d\u092f\u092e \u0939\u0948\u0964 \u091c\u091f\u093f\u0932 \u0930\u094b\u0936\u0928\u0940 \u092f\u093e \u092a\u0943\u0937\u094d\u0920\u092d\u0942\u092e\u093f \u0915\u0940 \u0938\u094d\u0925\u093f\u0924\u093f\u092f\u094b\u0902 \u092e\u0947\u0902 "
+            "\u092a\u0930\u093f\u0923\u093e\u092e \u0915\u092e \u0938\u091f\u0940\u0915 \u0939\u094b \u0938\u0915\u0924\u0947 \u0939\u0948\u0902\u0964"
+        ),
+        "low": (
+            "\u092a\u0942\u0930\u094d\u0935\u093e\u0928\u0941\u092e\u093e\u0928 \u0915\u093e \u0935\u093f\u0936\u094d\u0935\u093e\u0938 \u0915\u092e \u0939\u0948\u0964 \u0905\u0927\u093f\u0915 \u0935\u093f\u0936\u094d\u0935\u0938\u0928\u0940\u092f \u0928\u093f\u0926\u093e\u0928 \u0915\u0947 \u0932\u093f\u090f \u0915\u0943\u092a\u092f\u093e \u090f\u0915 \u0938\u094d\u092a\u0937\u094d\u091f "
+            "\u092a\u0924\u094d\u0924\u0947 \u0915\u0940 \u0915\u094d\u0932\u094b\u091c\u093c-\u0905\u092a \u0924\u0938\u094d\u0935\u0940\u0930 \u0905\u092a\u0932\u094b\u0921 \u0915\u0930\u0947\u0902\u0964"
+        ),
+    },
+    "mr": {
+        "moderate": (
+            "\u0905\u0902\u0926\u093e\u091c\u093e\u091a\u093e \u0935\u093f\u0936\u094d\u0935\u093e\u0938 \u092e\u0927\u094d\u092f\u092e \u0906\u0939\u0947. \u0915\u0920\u0940\u0923 \u092a\u094d\u0930\u0915\u093e\u0936 \u0915\u093f\u0902\u0935\u093e \u092a\u093e\u0930\u094d\u0936\u094d\u0935\u092d\u0942\u092e\u0940\u091a\u094d\u092f\u093e \u092a\u0930\u093f\u0938\u094d\u0925\u093f\u0924\u0940\u0924 "
+            "\u0928\u093f\u0915\u093e\u0932 \u0915\u092e\u0940 \u0905\u091a\u0942\u0915 \u0905\u0938\u0942 \u0936\u0915\u0924\u093e\u0924."
+        ),
+        "low": (
+            "\u0905\u0902\u0926\u093e\u091c\u093e\u091a\u093e \u0935\u093f\u0936\u094d\u0935\u093e\u0938 \u0915\u092e\u0940 \u0906\u0939\u0947. \u0905\u0927\u093f\u0915 \u0935\u093f\u0936\u094d\u0935\u093e\u0938\u093e\u0930\u094d\u0939 \u0928\u093f\u0926\u093e\u0928\u093e\u0938\u093e\u0920\u0940 \u0915\u0943\u092a\u092f\u093e \u090f\u0915\u093e \u092a\u093e\u0928\u093e\u091a\u093e "
+            "\u0938\u094d\u092a\u0937\u094d\u091f \u091c\u0935\u0933\u091a\u093e \u092b\u094b\u091f\u094b \u0905\u092a\u0932\u094b\u0921 \u0915\u0930\u093e."
+        ),
+    },
+}
 
 
-def get_confidence_disclaimer(confidence):
+def get_confidence_disclaimer(confidence, language=DEFAULT_LANGUAGE):
     confidence_percent = confidence * 100
 
     if confidence_percent >= 70:
         return ""
 
+    disclaimers = CONFIDENCE_DISCLAIMERS.get(language, CONFIDENCE_DISCLAIMERS[DEFAULT_LANGUAGE])
+
     if confidence_percent >= 50:
-        return MODERATE_CONFIDENCE_DISCLAIMER
+        return disclaimers["moderate"]
 
-    return LOW_CONFIDENCE_DISCLAIMER
+    return disclaimers["low"]
 
 
-def get_crop_advice(crop, disease, confidence, fallback_treatment):
+def get_supported_languages():
+    return [
+        {"code": code, "name": name}
+        for code, name in SUPPORTED_LANGUAGES.items()
+    ]
+
+
+def validate_language(language):
+    if language and language in SUPPORTED_LANGUAGES:
+        return language
+    return DEFAULT_LANGUAGE
+
+
+def validate_image_is_plant(image_file):
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return
+
+    try:
+        genai.configure(api_key=api_key)
+        img = Image.open(image_file.stream)
+        
+        prompt = """
+You are an image validation system for a crop disease detection app.
+Look at this image and determine if it contains a real crop, plant, or leaf that is suitable for disease detection.
+Invalid examples: anime/cartoon images, people/selfies, football cards, random screenshots, vehicles, non-plant objects.
+Valid examples: close-up crop leaves, diseased leaves, healthy leaves, real plant foliage.
+
+Return ONLY a JSON response with this exact structure:
+{
+    "is_valid": true or false,
+    "reason": "short reason"
+}
+"""
+
+        for model_name in get_candidate_model_names():
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(
+                    [prompt, img],
+                    generation_config={
+                        "temperature": 0.1,
+                        "response_mime_type": "application/json",
+                    },
+                    request_options={"timeout": 15},
+                )
+                
+                result = parse_gemini_response(response.text)
+                if not result.get("is_valid", True):
+                    raise ValueError("Please upload a clear crop leaf image for disease detection.")
+                
+                break
+            except ValueError:
+                raise
+            except Exception as e:
+                LOGGER.warning("Gemini vision validation failed for model %s: %s", model_name, e)
+                continue
+
+    except ValueError:
+        raise
+    except Exception as e:
+        LOGGER.warning("Image validation encountered an error: %s", e)
+    finally:
+        image_file.stream.seek(0)
+
+
+def get_crop_advice(crop, disease, confidence, fallback_treatment, language=DEFAULT_LANGUAGE):
     fallback_advice = build_fallback_advice(disease, confidence, fallback_treatment)
     api_key = os.getenv("GEMINI_API_KEY")
 
@@ -48,15 +147,15 @@ def get_crop_advice(crop, disease, confidence, fallback_treatment):
 
     try:
         genai.configure(api_key=api_key)
-        advice = generate_advice_with_available_model(crop, disease, confidence)
+        advice = generate_advice_with_available_model(crop, disease, confidence, language)
         return normalize_advice(advice, fallback_advice)
     except Exception as error:
         LOGGER.warning("Gemini advice generation failed: %s", error)
         return fallback_advice
 
 
-def generate_advice_with_available_model(crop, disease, confidence):
-    prompt = build_prompt(crop, disease, confidence)
+def generate_advice_with_available_model(crop, disease, confidence, language=DEFAULT_LANGUAGE):
+    prompt = build_prompt(crop, disease, confidence, language)
     errors = []
 
     for model_name in get_candidate_model_names():
@@ -88,8 +187,17 @@ def get_candidate_model_names():
     return model_names
 
 
-def build_prompt(crop, disease, confidence):
+def build_prompt(crop, disease, confidence, language=DEFAULT_LANGUAGE):
     confidence_percent = confidence * 100
+    language_name = SUPPORTED_LANGUAGES.get(language, SUPPORTED_LANGUAGES[DEFAULT_LANGUAGE])
+
+    language_instruction = ""
+    if language != "en":
+        language_instruction = (
+            f"\nIMPORTANT: Write these text values (causes, treatment, prevention) "
+            f"in {language_name}. Keep the 'severity' value and all JSON keys in English. "
+            f"Only the values for causes, treatment, and prevention should be in {language_name}.\n"
+        )
 
     return f"""
 You are helping a farmer understand a crop disease prediction.
@@ -98,7 +206,7 @@ Prediction details:
 - Crop: {crop}
 - Disease: {disease}
 - Confidence: {confidence_percent:.2f}%
-
+{language_instruction}
 Return only valid JSON with this exact structure:
 {{
   "severity": "None, Low, Medium, or High",

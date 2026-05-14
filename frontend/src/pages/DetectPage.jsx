@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, ImageUp, Leaf, Loader2, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Globe, ImageUp, Leaf, Loader2, Sparkles } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import ImageUploader from '../components/ImageUploader.jsx';
 import ResultCard from '../components/ResultCard.jsx';
@@ -11,9 +11,15 @@ const CROP_OPTIONS = [
   { id: 'potato', name: 'Potato' },
   { id: 'tomato', name: 'Tomato' },
 ];
+const LANGUAGE_OPTIONS = [
+  { code: 'en', name: 'English' },
+  { code: 'hi', name: 'हिन्दी (Hindi)' },
+  { code: 'mr', name: 'मराठी (Marathi)' },
+];
 
 function DetectPage() {
   const [selectedCrop, setSelectedCrop] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [result, setResult] = useState(null);
@@ -48,6 +54,7 @@ function DetectPage() {
     const formData = new FormData();
     formData.append('crop', selectedCrop);
     formData.append('image', selectedFile);
+    formData.append('language', selectedLanguage);
 
     const savedLocation = getSavedLocation();
 
@@ -131,11 +138,13 @@ function DetectPage() {
             setResult(null);
             setError('');
           }}
+          onLanguageSelect={setSelectedLanguage}
           previewUrl={previewUrl}
           selectedCrop={selectedCrop}
           selectedFile={selectedFile}
+          selectedLanguage={selectedLanguage}
         />
-        <ResultCard isLoading={isAnalyzing} onSpeak={speakResult} result={result} />
+        <ResultCard isLoading={isAnalyzing} language={selectedLanguage} onSpeak={speakResult} result={result} />
       </div>
     </div>
   );
@@ -149,9 +158,11 @@ function DetectionForm({
   onAnalyze,
   onCropSelect,
   onFileSelect,
+  onLanguageSelect,
   previewUrl,
   selectedCrop,
   selectedFile,
+  selectedLanguage,
 }) {
   return (
     <section className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-soft backdrop-blur sm:p-7">
@@ -165,33 +176,55 @@ function DetectionForm({
         </div>
       </div>
 
-      <div className="mb-5">
-        <p className="mb-3 text-sm font-semibold text-leaf-900">Crop type</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {CROP_OPTIONS.map((crop) => {
-            const isSelected = selectedCrop === crop.id;
+      <div className="mb-5 flex flex-col gap-5 sm:flex-row sm:gap-6">
+        <div className="flex-1">
+          <p className="mb-3 text-sm font-semibold text-leaf-900">Crop type</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+            {CROP_OPTIONS.map((crop) => {
+              const isSelected = selectedCrop === crop.id;
 
-            return (
-              <button
-                aria-pressed={isSelected}
-                className={`flex min-h-20 flex-col items-start justify-between rounded-2xl border p-3 text-left transition duration-200 ${
-                  isSelected
-                    ? 'border-leaf-700 bg-leaf-700 text-white shadow-lg shadow-leaf-900/15'
-                    : 'border-leaf-200 bg-leaf-50 text-leaf-900 hover:-translate-y-0.5 hover:border-leaf-500 hover:bg-white'
-                }`}
-                disabled={isAnalyzing}
-                key={crop.id}
-                onClick={() => onCropSelect(crop.id)}
-                type="button"
-              >
-                <span className="flex w-full items-center justify-between gap-2">
-                  <Leaf aria-hidden="true" className="h-5 w-5" />
-                  {isSelected ? <CheckCircle2 aria-hidden="true" className="h-5 w-5" /> : null}
-                </span>
-                <span className="text-base font-semibold">{crop.name}</span>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  aria-pressed={isSelected}
+                  className={`flex min-h-20 flex-col items-start justify-between rounded-2xl border p-3 text-left transition duration-200 ${
+                    isSelected
+                      ? 'border-leaf-700 bg-leaf-700 text-white shadow-lg shadow-leaf-900/15'
+                      : 'border-leaf-200 bg-leaf-50 text-leaf-900 hover:-translate-y-0.5 hover:border-leaf-500 hover:bg-white'
+                  }`}
+                  disabled={isAnalyzing}
+                  key={crop.id}
+                  onClick={() => onCropSelect(crop.id)}
+                  type="button"
+                >
+                  <span className="flex w-full items-center justify-between gap-2">
+                    <Leaf aria-hidden="true" className="h-5 w-5" />
+                    {isSelected ? <CheckCircle2 aria-hidden="true" className="h-5 w-5" /> : null}
+                  </span>
+                  <span className="text-base font-semibold">{crop.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="sm:w-48">
+          <p className="mb-3 text-sm font-semibold text-leaf-900">Advisory language</p>
+          <div className="relative">
+            <Globe aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-leaf-600" />
+            <select
+              className="w-full appearance-none rounded-2xl border border-leaf-200 bg-leaf-50 py-3 pl-9 pr-4 text-sm font-semibold text-leaf-900 transition hover:border-leaf-500 hover:bg-white focus:border-leaf-600 focus:outline-none focus:ring-2 focus:ring-leaf-200"
+              disabled={isAnalyzing}
+              onChange={(e) => onLanguageSelect(e.target.value)}
+              value={selectedLanguage}
+            >
+              {LANGUAGE_OPTIONS.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="mt-2 text-xs text-leaf-600">Only advisory text is translated.</p>
         </div>
       </div>
 

@@ -68,9 +68,10 @@ def create_app():
 
         latitude = request.form.get("latitude")
         longitude = request.form.get("longitude")
+        language = request.form.get("language", "en").strip().lower()
 
         try:
-            result = analyze_crop_image(image, crop)
+            result = analyze_crop_image(image, crop, language)
             result["stored_in_community_reports"] = save_disease_report(
                 result["crop"],
                 result["disease"],

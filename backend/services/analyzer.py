@@ -10,9 +10,9 @@ from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.models import load_model
 
 try:
-    from services.gemini_service import get_confidence_disclaimer, get_crop_advice
+    from services.gemini_service import get_confidence_disclaimer, get_crop_advice, validate_language, validate_image_is_plant
 except ModuleNotFoundError:
-    from backend.services.gemini_service import get_confidence_disclaimer, get_crop_advice
+    from backend.services.gemini_service import get_confidence_disclaimer, get_crop_advice, validate_language, validate_image_is_plant
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -209,33 +209,51 @@ def get_weight_name(weight):
     return path.rsplit("/", 1)[-1].split(":", 1)[0]
 
 
-def analyze_crop_image(image_file, crop):
+def analyze_crop_image(image_file, crop, language="en"):
     crop_id, config = get_model_config(crop)
+    language = validate_language(language)
+
+    validate_image_is_plant(image_file)
 
     model = get_model(crop_id)
     input_size = get_model_input_size(model)
     image_array = preprocess_image(image_file.stream, input_size)
     predictions = normalize_predictions(model.predict(image_array, verbose=0)[0])
 
-    class_index = int(np.argmax(predictions))
+    top_indices = np.argsort(predictions)[-2:][::-1]
+    class_index = int(top_indices[0])
     confidence = float(predictions[class_index])
     disease = get_class_name(config, class_index)
+    
+    result_dict = {
+        "crop": config["label"],
+        "disease": disease,
+        "confidence": f"{confidence * 100:.2f}%",
+    }
+    
+    if len(top_indices) > 1:
+        second_index = int(top_indices[1])
+        second_confidence = float(predictions[second_index])
+        
+        if second_confidence > 0:
+            result_dict["alternative_disease"] = get_class_name(config, second_index)
+            result_dict["alternative_confidence"] = f"{second_confidence * 100:.2f}%"
+
     fallback_treatment = TREATMENT_ADVICE.get(
         disease,
         "Consult a local agricultural expert for crop-specific treatment guidance.",
     )
-    advice = get_crop_advice(config["label"], disease, confidence, fallback_treatment)
+    advice = get_crop_advice(config["label"], disease, confidence, fallback_treatment, language)
 
-    return {
-        "crop": config["label"],
-        "disease": disease,
-        "confidence": f"{confidence * 100:.2f}%",
-        "disclaimer": get_confidence_disclaimer(confidence),
+    result_dict.update({
+        "disclaimer": get_confidence_disclaimer(confidence, language),
         "severity": advice["severity"],
         "causes": advice["causes"],
         "treatment": advice["treatment"],
         "prevention": advice["prevention"],
-    }
+    })
+    
+    return result_dict
 
 
 def get_model_input_size(model):

@@ -31,16 +31,33 @@ def save_disease_report(crop, disease, confidence, latitude=None, longitude=None
     lat = parse_coordinate(latitude)
     lon = parse_coordinate(longitude)
 
+    if lat is not None:
+        lat = round(lat, 3)
+    if lon is not None:
+        lon = round(lon, 3)
+
     with get_connection() as connection:
-        duplicate = connection.execute(
-            """
-            SELECT 1 FROM disease_reports
-            WHERE crop = ? AND disease = ? AND confidence = ?
-              AND created_at >= datetime('now', '-60 seconds')
-            LIMIT 1
-            """,
-            (crop, disease, confidence),
-        ).fetchone()
+        if lat is not None and lon is not None:
+            duplicate = connection.execute(
+                """
+                SELECT 1 FROM disease_reports
+                WHERE crop = ? AND disease = ? 
+                  AND latitude = ? AND longitude = ?
+                  AND created_at >= datetime('now', '-1 hour')
+                LIMIT 1
+                """,
+                (crop, disease, lat, lon),
+            ).fetchone()
+        else:
+            duplicate = connection.execute(
+                """
+                SELECT 1 FROM disease_reports
+                WHERE crop = ? AND disease = ? AND confidence = ?
+                  AND created_at >= datetime('now', '-60 seconds')
+                LIMIT 1
+                """,
+                (crop, disease, confidence),
+            ).fetchone()
 
         if duplicate:
             return True
