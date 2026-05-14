@@ -34,7 +34,11 @@ def create_app():
         if not image.mimetype.startswith("image/"):
             return jsonify({"error": "Uploaded file must be an image."}), 400
 
-        result = analyze_crop_image(image)
+        try:
+            result = analyze_crop_image(image)
+        except Exception as error:
+            return jsonify({"error": str(error)}), 500
+
         return jsonify(result)
 
     return app

@@ -47,11 +47,12 @@ function App() {
         body: formData,
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error('The analysis service could not process this image.');
+        throw new Error(data.error || 'The analysis service could not process this image.');
       }
 
-      const data = await response.json();
       setResult(data);
     } catch (requestError) {
       setError(

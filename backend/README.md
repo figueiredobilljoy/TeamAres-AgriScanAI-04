@@ -23,3 +23,15 @@ The frontend sends uploaded images to:
 ```text
 POST http://localhost:5000/analyze
 ```
+
+## Model
+
+The backend loads the tomato-only Keras model from:
+
+```text
+../ai-model/tomato_disease_model.h5
+```
+
+The current model outputs 4 tomato classes. If the model was trained with a
+different class order, update `TOMATO_CLASSES` in `services/analyzer.py` to
+match the training labels.
