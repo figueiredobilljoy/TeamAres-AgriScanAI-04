@@ -2,7 +2,7 @@ import { AlertCircle, Loader2, LocateFixed, MapPin } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import DiseaseInsights from '../components/DiseaseInsights.jsx';
 import StoreCards from '../components/StoreCards.jsx';
-import { apiUrl } from '../config/api.js';
+import { API_BASE_URL, apiUrl } from '../config/api.js';
 import { getSavedLocation, saveLocation } from '../utils/storage.js';
 
 const COMMUNITY_API_URL = apiUrl('/community');
@@ -48,7 +48,7 @@ function CommunityPage() {
         error instanceof TypeError && /failed to fetch|network/i.test(error.message);
       setStoresError(
         isNetworkError
-          ? 'Could not connect to the server. Please check that the backend is running on port 5000.'
+          ? `Could not connect to the server at ${API_BASE_URL}. The backend may be starting, unavailable, or blocked by CORS.`
           : error instanceof Error
             ? error.message
             : 'Community data could not be loaded.',

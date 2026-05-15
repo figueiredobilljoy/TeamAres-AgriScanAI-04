@@ -2,7 +2,7 @@ import { AlertCircle, CheckCircle2, Globe, ImageUp, Leaf, Loader2, Sparkles } fr
 import React, { useEffect, useState } from 'react';
 import ImageUploader from '../components/ImageUploader.jsx';
 import ResultCard from '../components/ResultCard.jsx';
-import { apiUrl } from '../config/api.js';
+import { API_BASE_URL, apiUrl } from '../config/api.js';
 import { getSavedLocation, saveLatestResult } from '../utils/storage.js';
 
 const API_URL = apiUrl('/analyze');
@@ -82,7 +82,7 @@ function DetectPage() {
         requestError instanceof TypeError && /failed to fetch|network/i.test(requestError.message);
       setError(
         isNetworkError
-          ? 'Could not connect to the analysis server. Please check that the backend is running on port 5000.'
+          ? `Could not connect to the analysis server at ${API_BASE_URL}. The backend may be starting, unavailable, or blocked by CORS.`
           : requestError instanceof Error
             ? requestError.message
             : 'Something went wrong while analyzing the image.',
