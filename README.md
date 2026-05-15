@@ -124,6 +124,19 @@ http://localhost:5173
 5. Click the analyze button.
 6. View the disease prediction and advisory result.
 
+## Documentation
+
+Detailed documentation is available in:
+
+```text
+docs/
+```
+
+- `docs/ARCHITECTURE.md` explains the system design and data flow.
+- `docs/API.md` documents backend endpoints.
+- `docs/DEPLOYMENT.md` covers Vercel and Render deployment.
+- `docs/DEMO_GUIDE.md` provides a demo walkthrough.
+
 ## Screenshots
 
 To be added.
