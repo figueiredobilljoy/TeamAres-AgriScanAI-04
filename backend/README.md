@@ -12,7 +12,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Create `backend/.env` with your Gemini key before running AI advice:
+Create `backend/.env` from `.env.example` with your Gemini key before running AI advice:
 
 ```text
 GEMINI_API_KEY=your_api_key_here
@@ -24,16 +24,22 @@ The backend uses `gemini-2.5-flash` by default. To override it, add:
 GEMINI_MODEL_NAME=gemini-2.5-flash
 ```
 
+To allow a deployed frontend or a different local Vite port, set comma-separated CORS origins:
+
+```text
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
 The API runs at:
 
 ```text
 http://localhost:5000
 ```
 
-The frontend sends uploaded images to:
+The frontend sends uploaded images to `VITE_API_BASE_URL` plus:
 
 ```text
-POST http://localhost:5000/analyze
+POST /analyze
 ```
 
 Optional form fields:
@@ -47,14 +53,14 @@ When coordinates are provided, the backend uses free OpenStreetMap/Nominatim
 lookup to suggest nearby agriculture-related stores and pharmacies. If the
 lookup fails, disease prediction and Gemini advice still return normally.
 
-## Model
+## Models
 
-The backend loads the tomato-only Keras model from:
+The backend loads Keras models from:
 
 ```text
-../ai-model/tomato_disease_model.h5
+../ai-model/
 ```
 
-The current model outputs 4 tomato classes. If the model was trained with a
-different class order, update `TOMATO_CLASSES` in `services/analyzer.py` to
-match the training labels.
+Supported crops and class order are defined in `services/analyzer.py`. If any
+model was trained with a different class order, update `MODEL_CONFIGS` to match
+the training labels.

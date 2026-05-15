@@ -2,9 +2,10 @@ import { AlertCircle, CheckCircle2, Globe, ImageUp, Leaf, Loader2, Sparkles } fr
 import React, { useEffect, useState } from 'react';
 import ImageUploader from '../components/ImageUploader.jsx';
 import ResultCard from '../components/ResultCard.jsx';
+import { apiUrl } from '../config/api.js';
 import { getSavedLocation, saveLatestResult } from '../utils/storage.js';
 
-const API_URL = 'http://localhost:5000/analyze';
+const API_URL = apiUrl('/analyze');
 const CROP_OPTIONS = [
   { id: 'apple', name: 'Apple' },
   { id: 'mango', name: 'Mango' },

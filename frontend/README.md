@@ -7,6 +7,12 @@ React + Vite frontend for the AgriScan AI crop disease detection app.
 - Node.js installed
 - Backend server running at `http://localhost:5000`
 
+Optional: create `frontend/.env` from `.env.example` when the backend URL is different:
+
+```text
+VITE_API_BASE_URL=http://localhost:5000
+```
+
 ## Start the Development Server
 
 Install dependencies:
@@ -43,5 +49,5 @@ npm run preview
 
 ## Notes
 
-- The frontend sends crop selection and uploaded image data to `http://localhost:5000/analyze`.
+- The frontend sends API requests to `VITE_API_BASE_URL`, defaulting to `http://localhost:5000`.
 - Start the backend before using the disease detection flow.

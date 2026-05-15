@@ -2,9 +2,10 @@ import { AlertCircle, Loader2, LocateFixed, MapPin } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import DiseaseInsights from '../components/DiseaseInsights.jsx';
 import StoreCards from '../components/StoreCards.jsx';
+import { apiUrl } from '../config/api.js';
 import { getSavedLocation, saveLocation } from '../utils/storage.js';
 
-const COMMUNITY_API_URL = 'http://localhost:5000/community';
+const COMMUNITY_API_URL = apiUrl('/community');
 
 function CommunityPage() {
   const [location, setLocation] = useState(() => getSavedLocation());

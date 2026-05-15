@@ -1,5 +1,9 @@
+import os
+from pathlib import Path
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from dotenv import load_dotenv
 
 try:
     from db.database import get_nearby_disease_insights, initialize_database, save_disease_report
@@ -11,9 +15,21 @@ except ModuleNotFoundError:
     from backend.services.location_service import find_nearby_agriculture_stores
 
 
+BACKEND_DIR = Path(__file__).resolve().parent
+load_dotenv(BACKEND_DIR / ".env")
+
+
 def create_app():
     app = Flask(__name__)
-    CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173"]}})
+    cors_origins = [
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://127.0.0.1:5173",
+        ).split(",")
+        if origin.strip()
+    ]
+    CORS(app, resources={r"/*": {"origins": cors_origins}})
     initialize_database()
 
     @app.get("/")
