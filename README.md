@@ -137,6 +137,14 @@ docs/
 - `docs/DEPLOYMENT.md` covers Vercel and Render deployment.
 - `docs/DEMO_GUIDE.md` provides a demo walkthrough.
 
+## Presentation
+
+The project presentation deck is listed in:
+
+```text
+presentation/README.md
+```
+
 ## Screenshots
 
 To be added.
