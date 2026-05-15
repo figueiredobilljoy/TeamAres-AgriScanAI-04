@@ -2,7 +2,6 @@ import {
   Bot,
   MapPin,
   Megaphone,
-  Mic,
   ScanSearch,
   ShieldCheck,
   Sparkles,
@@ -30,17 +29,12 @@ const features = [
     title: 'Community disease insights',
     text: 'See common disease reports around your area from saved local detections.',
   },
-  {
-    icon: Mic,
-    title: 'Text-to-speech support',
-    text: 'Listen to disease results and advisory steps directly from the Detect page.',
-  },
 ];
 
 function HomePage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <section className="grid min-h-[calc(100vh-9rem)] items-center gap-10 py-8 lg:grid-cols-[1.05fr_0.95fr]">
+      <section className="grid min-h-[calc(100vh-9rem)] items-center gap-10 py-8 lg:grid-cols-2">
         <div>
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-leaf-200 bg-white px-4 py-2 text-sm font-semibold text-leaf-800 shadow-sm">
             <Sparkles aria-hidden="true" className="h-4 w-4" />
@@ -94,9 +88,9 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="grid gap-4 pb-12 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 pb-12 sm:grid-cols-2 lg:grid-cols-4">
         {features.map(({ icon: Icon, title, text }) => (
-          <article className="rounded-2xl border border-white/80 bg-white/85 p-5 shadow-soft" key={title}>
+          <article className="flex h-full flex-col rounded-2xl border border-white/80 bg-white/85 p-5 shadow-soft" key={title}>
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-leaf-100 text-leaf-700">
               <Icon aria-hidden="true" className="h-5 w-5" />
             </div>

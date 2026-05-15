@@ -92,28 +92,6 @@ function DetectPage() {
     }
   };
 
-  const speakResult = () => {
-    if (!result || !window.speechSynthesis) {
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const text = [
-      `Crop: ${result.crop}.`,
-      `Disease: ${result.disease}.`,
-      `Confidence: ${result.confidence}.`,
-      result.disclaimer,
-      `Severity: ${result.severity}.`,
-      ...(result.causes || []).map((item) => `Cause: ${item}.`),
-      ...(result.treatment || []).map((item) => `Treatment: ${item}.`),
-      ...(result.prevention || []).map((item) => `Prevention: ${item}.`),
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
-  };
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6">
@@ -124,7 +102,7 @@ function DetectPage() {
         </p>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid items-stretch gap-6 lg:grid-cols-2">
         <DetectionForm
           error={error}
           isAnalyzing={isAnalyzing}
@@ -145,7 +123,7 @@ function DetectPage() {
           selectedFile={selectedFile}
           selectedLanguage={selectedLanguage}
         />
-        <ResultCard isLoading={isAnalyzing} language={selectedLanguage} onSpeak={speakResult} result={result} />
+        <ResultCard isLoading={isAnalyzing} language={selectedLanguage} result={result} />
       </div>
     </div>
   );
@@ -166,7 +144,7 @@ function DetectionForm({
   selectedLanguage,
 }) {
   return (
-    <section className="rounded-3xl border border-white/70 bg-white/85 p-5 shadow-soft backdrop-blur sm:p-7">
+    <section className="flex h-full flex-col rounded-3xl border border-white/70 bg-white/85 p-5 shadow-soft backdrop-blur sm:p-7">
       <div className="mb-5 flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-leaf-100 text-leaf-700">
           <ImageUp aria-hidden="true" className="h-5 w-5" />
@@ -229,12 +207,14 @@ function DetectionForm({
         </div>
       </div>
 
-      <ImageUploader
-        disabled={isAnalyzing || !selectedCrop}
-        onFileSelect={onFileSelect}
-        previewUrl={previewUrl}
-        selectedFile={selectedFile}
-      />
+      <div className="flex-1">
+        <ImageUploader
+          disabled={isAnalyzing || !selectedCrop}
+          onFileSelect={onFileSelect}
+          previewUrl={previewUrl}
+          selectedFile={selectedFile}
+        />
+      </div>
 
       {!selectedCrop ? (
         <p className="mt-3 text-sm text-leaf-700">

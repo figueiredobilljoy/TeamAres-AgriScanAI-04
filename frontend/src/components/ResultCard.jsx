@@ -1,7 +1,6 @@
 import {
   Activity,
   BadgeCheck,
-  Volume2,
   FlaskConical,
   Leaf,
   Loader2,
@@ -46,36 +45,24 @@ function getLabel(language, key) {
   return labels[key] || ADVISORY_LABELS.en[key];
 }
 
-function ResultCard({ isLoading, language = 'en', onSpeak, result }) {
+function ResultCard({ isLoading, language = 'en', result }) {
   const data = result ?? emptyState;
   const hasStructuredAdvice =
     Array.isArray(data.causes) || Array.isArray(data.treatment) || Array.isArray(data.prevention);
 
   return (
-    <section className="rounded-3xl border border-leaf-100 bg-leaf-900 p-5 text-white shadow-soft sm:p-7">
+    <section className="flex h-full flex-col rounded-3xl border border-leaf-100 bg-leaf-900 p-5 text-white shadow-soft sm:p-7">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold">Analysis Result</h2>
           <p className="mt-1 text-sm text-leaf-100">Disease details and next action.</p>
         </div>
-        <div className="flex items-center gap-2">
-          {result ? (
-            <button
-              aria-label="Read result aloud"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-leaf-100 transition hover:bg-white/15"
-              onClick={onSpeak}
-              type="button"
-            >
-              <Volume2 aria-hidden="true" className="h-5 w-5" />
-            </button>
-          ) : null}
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-leaf-100">
-            {isLoading ? (
-              <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
-            ) : (
-              <BadgeCheck aria-hidden="true" className="h-5 w-5" />
-            )}
-          </div>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-leaf-100">
+          {isLoading ? (
+            <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
+          ) : (
+            <BadgeCheck aria-hidden="true" className="h-5 w-5" />
+          )}
         </div>
       </div>
 
@@ -90,7 +77,7 @@ function ResultCard({ isLoading, language = 'en', onSpeak, result }) {
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
           <p className="text-xs font-medium uppercase tracking-normal text-leaf-200">Possible Alternative</p>
           <p className="mt-1 text-base font-medium text-leaf-50">
-            {data.alternative_disease} — {formatConfidence(data.alternative_confidence)}
+            {data.alternative_disease} - {formatConfidence(data.alternative_confidence)}
           </p>
         </div>
       ) : null}
@@ -101,7 +88,7 @@ function ResultCard({ isLoading, language = 'en', onSpeak, result }) {
         </div>
       ) : null}
 
-      <div className="mt-4 space-y-4 rounded-3xl border border-white/10 bg-white/10 p-5 shadow-inner">
+      <div className="mt-4 flex-1 space-y-4 rounded-3xl border border-white/10 bg-white/10 p-5 shadow-inner">
         <AdviceSection title={getLabel(language, 'causes')} items={data.causes} />
         <AdviceSection title={getLabel(language, 'treatment')} items={data.treatment ?? data.advice} />
         {hasStructuredAdvice ? <AdviceSection title={getLabel(language, 'prevention')} items={data.prevention} /> : null}
