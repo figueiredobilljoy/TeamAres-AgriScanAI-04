@@ -145,11 +145,15 @@ The project presentation deck is listed in:
 presentation/README.md
 ```
 
-## Screenshots
-
-To be added.
-
 ## Demo Video
+
+The project demo video is listed in:
+
+```text
+demo/README.md
+```
+
+## Screenshots
 
 To be added.
 
